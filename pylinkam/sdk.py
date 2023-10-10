@@ -342,7 +342,7 @@ class SDKWrapper:
         """
         self._sdk_root_path = sdk_root_path or self._DEFAULT_SDK_ROOT_PATH
 
-        self._sdk: typing.Optional[ctypes.WinDLL] = None
+        self._sdk: typing.Optional[ctypes.CDLL] = None
         self._sdk_lock = threading.RLock()
 
         # Setup DLL name and paths
@@ -362,14 +362,17 @@ class SDKWrapper:
         self._sdk = None
 
     @property
-    def sdk(self) -> ctypes.WinDLL:
+    def sdk(self) -> ctypes.CDLL:
         if self._sdk is None:
-            # Load SDK DLL
-            try:
-                sdk = ctypes.WinDLL(self.sdk_dll_name)
-            except FileNotFoundError:
-                # Try absolute path
-                sdk = ctypes.WinDLL(os.path.join(self.sdk_root_path, self.sdk_dll_name))
+            if os.name == "nt":
+                # Load SDK DLL
+                try:
+                    sdk = ctypes.WinDLL(self.sdk_dll_name)
+                except FileNotFoundError:
+                    # Try absolute path
+                    sdk = ctypes.WinDLL(os.path.join(self.sdk_root_path, self.sdk_dll_name))
+            else:
+                sdk = ctypes.CDLL("libLinkamSDK.so")
 
             if sdk is None:
                 raise SDKError('Linkam SDK was not loaded')
